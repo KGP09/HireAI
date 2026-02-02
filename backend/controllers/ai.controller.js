@@ -7,7 +7,7 @@ export const createTest = async (req, res) => {
     temperature: 0.7,
     apiKey: process.env.MISTRAL_API_KEY,
   });
-  console.log(process.env.MISTRAL_API_KEY);
+  // console.log(process.env.MISTRAL_API_KEY);
 
   const interviewPrompt = new PromptTemplate({
     inputVariables: ["description"],
@@ -33,18 +33,34 @@ Use the following schema structure:
         }}
       ],
       "answers": [],
+      "status" : boolean
       "score": 0,
       "feedback": ""
     }}
   ]
 }}
 
-Use this format:
-1. Aptitude & Technical: include options and correctAnswer.
-2. Telephonic: only question and correctAnswer (no options).
-3. DSA: include description, constraints, test cases in question. Options = test cases, correctAnswer = expected outputs.
-4. HR: leave round empty or omit.
+Rules:
+1. **Aptitude Round** → focus on advanced logical reasoning, probability, optimization, data interpretation.  
+   Example: "A train leaves Station A at 60km/h, another leaves Station B... When will they meet?"  
+2. **Technical Round** → deep CS fundamentals (OS, DBMS, Networking, System Design). Avoid trivial syntax questions.  
+3. **Telephonic Round** → scenario-based (e.g., debugging a distributed system crash, tradeoffs in architecture).  
+4. **DSA Round** → medium-hard to hard coding challenges. Each question must include:
+   - Problem description
+   - Constraints
+   - Input/Output format
+   - Example test cases
+5. **HR Round** → real behavioral questions.  
+   Example: "Describe a time when you disagreed with your manager. How did you resolve it?"
+6. If the number of questions are not specified, default to 10 questions per round.
+Constraints:
+- No trivial questions like "area of a square" or "2+2".  
+- Every round must include a mix of easy, medium, and hard.  
+- Questions must simulate **real interview difficulty**.  
+- Return **only raw JSON**, no explanations or markdown. 
+7. If the company's name is present in the description then in the testName part of the return json format use it , if not use a default name.
 
+    ""IF THE INPUT THAT IS GIVEN IS NOT VAILD PREPARATION PROMT : return a json object with a string message property with value "Invalid Input""
 INPUT:
 {description}
 `,
@@ -71,7 +87,9 @@ INPUT:
 
     const jsonString = match[1];
     const parsed = JSON.parse(jsonString);
-
+    if (parsed.message && parsed.message === "Invalid Input") {
+      return res.status(400).json({ message: "Invalid Input" });
+    }
     const formattedTest = {
       testName: parsed.testName,
       numberOfRounds: parsed.numberOfRounds,
@@ -79,9 +97,10 @@ INPUT:
         description: round.description,
         roundType: round.roundType,
         isScorable: round.isScorable,
+        status: round.status,
         score: round.score || 0,
         feedback: round.feedback || "",
-        qnASchema: (round.questions || []).map((q) => ({
+        questions: (round.questions || []).map((q) => ({
           question: q.question,
           options: q.options || [],
           correctAnswer: q.correctAnswer || "",
@@ -97,10 +116,10 @@ INPUT:
     user.tests.push(formattedTest);
     await user.save();
 
-    console.log("✅ Interview Test Created:", formattedTest);
-    return res.status(200).json({ message: "Interview Test Created" });
+    console.log("Interview Test Created:", formattedTest);
+    return res.status(200).json({ parsed, message: "Interview Test Created" });
   } catch (error) {
-    console.log("❌ Error generating interview questions:", error.message);
+    console.log("Error generating interview questions:", error.message);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };

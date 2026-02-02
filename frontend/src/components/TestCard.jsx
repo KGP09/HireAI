@@ -1,7 +1,15 @@
 import { useAIStore } from "../store/useAIStore";
 import { useEffect } from "react";
-import { Loader2 } from "lucide-react"; // optional icon
-import { Link } from "react-router-dom"; // if you want navigation
+import { Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+
+const roundRouteMap = {
+  "Aptitude Round": "/aptitude/:index",
+  "Telephonic Round": "/telephonic",
+  "DSA Round": "/dsa",
+  "Technical Round": "/technical-interview",
+  "HR Round": "/hr",
+};
 
 const TestCard = ({ id }) => {
   const { tests, getTests, isLoadingRounds } = useAIStore();
@@ -19,68 +27,95 @@ const TestCard = ({ id }) => {
   }
 
   if (!tests.length) {
-    return <div className="text-center text-gray-500 mt-10">No tests found.</div>;
+    return (
+      <div className="text-center text-gray-500 mt-10">No tests found.</div>
+    );
   }
 
-return (
-  <div className="flex flex-col gap-6 p-4">
-    {tests.map((test, index) => (
-      <div key={index} className="card bg-base-100 shadow-md border border-base-200">
-        <div className="card-body">
-          <h2 className="card-title text-primary">{test.testName}</h2>
-          <p className="text-sm text-gray-500">
-            Total Rounds: {test.numberOfRounds}
-          </p>
-          <div className="divider my-2" />
-          {test.rounds?.map((round, rIndex) => (
-            <div key={rIndex} className="mb-4">
-              <Link className="text-accent font-semibold">{round.roundType}</Link>
-              <p className="text-sm italic mb-1">{round.description}</p>
+  return (
+    <div className="flex flex-col gap-6 p-4">
+      {tests.map((test, index) => (
+        <div
+          key={index}
+          className="card bg-base-100 shadow-md border border-base-200"
+        >
+          <div className="card-body">
+            <h2 className="card-title text-primary">{test.testName}</h2>
 
-              {/* {round.isScorable && (
-                <p className="text-sm text-success">Score: {round.score} / 10</p>
-              )}
-              {round.feedback && (
-                <p className="text-sm text-warning">Feedback: {round.feedback}</p>
-              )} */}
+            <p className="text-sm text-gray-500">
+              Total Rounds: {test.numberOfRounds}
+            </p>
 
-              {/* <details className="collapse collapse-arrow bg-base-200 mt-2">
-                <summary className="collapse-title text-sm font-medium">
-                  Questions ({round.qnASchema?.length || 0})
-                </summary>
-                <div className="collapse-content">
-                  {round.qnASchema?.map((qna, qIndex) => (
-                    <div
-                      key={qIndex}
-                      className="mb-3 p-2 bg-base-100 border border-gray-200 rounded"
+            <div className="divider my-2" />
+
+            {test.rounds?.map((round, rIndex) => {
+              // 1. Get the base route from the map
+              let route = roundRouteMap[round.roundType];
+
+              // 2. Replace the placeholder with the real round index
+              if (route && route.includes(":index")) {
+                route = route.replace(":index", rIndex);
+              }
+
+              return (
+                <div
+                  key={rIndex}
+                  className="p-4 rounded-lg border border-base-300 bg-base-50"
+                >
+                  {/* Round Title */}
+                  <h3 className="font-semibold text-accent mb-1">
+                    {round.roundType}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-sm italic text-gray-500 mb-3">
+                    {round.description}
+                  </p>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {/* Take Test */}
+                    {!round.status && route && (
+                      <Link
+                        to={route}
+                        state={{ test, index, round, rIndex }}
+                        className="btn btn-primary btn-sm"
+                      >
+                        Take Test
+                      </Link>
+                    )}
+
+                    {/* Score (Scorable rounds) */}
+                    {round.status && round.isScorable && (
+                      <span className="text-sm font-semibold text-success">
+                        Score: {round.score}
+                      </span>
+                    )}
+
+                    {/* Feedback (Non-scorable rounds) */}
+                    {round.status && !round.isScorable && (
+                      <span className="text-sm font-semibold text-info">
+                        Feedback submitted
+                      </span>
+                    )}
+
+                    {/* Status Badge */}
+                    <span
+                      className={`badge ${
+                        round.status ? "badge-success" : "badge-warning"
+                      }`}
                     >
-                      <p className="font-medium">{qna.question}</p>
-                      <ul className="list-disc list-inside text-sm ml-2">
-                        {qna.options.map((opt, i) => (
-                          <li
-                            key={i}
-                            className={
-                              opt === qna.correctAnswer
-                                ? "text-green-600 font-semibold"
-                                : ""
-                            }
-                          >
-                            {opt}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
+                      {round.status ? "Completed" : "Pending"}
+                    </span>
+                  </div>
                 </div>
-              </details> */}
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
-      </div>
-    ))}
-  </div>
-);
-
+      ))}
+    </div>
+  );
 };
 
 export default TestCard;

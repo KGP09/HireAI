@@ -107,7 +107,6 @@ export const logout = (req, res) => {
   try {
     console.log("Logout Request Received");
 
-    // 👇 Clear the correct cookie
     res.cookie("token", "", {
       httpOnly: true,
       sameSite: "lax",

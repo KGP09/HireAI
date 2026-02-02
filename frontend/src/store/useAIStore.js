@@ -5,9 +5,9 @@ const BASE_URL =
   import.meta.env.MODE && import.meta.env.MODE === "development"
     ? "http://localhost:5004"
     : "/";
-export const useAIStore = create((set, get) => ({
+export const useAIStore = create((set) => ({
   rounds: [],
-  tests:[],
+  tests: [],
   isLoadingRounds: false,
   createTest: async (data) => {
     set({ isLoadingRounds: true });
@@ -36,15 +36,14 @@ export const useAIStore = create((set, get) => ({
     set({ isLoadingRounds: false });
   },
   getTests: async (id) => {
-    set({ isLoadingRounds: true });
-    try {
-      const res = await axiosInstance.post("/tests/get-tests", { id });
-      console.log("Get Tests Response: ", res.data);
-      set({ tests: res.data });
-    } catch (error) {
-      console.error("Error fetching tests:", error);
-      toast.error(error.response?.data?.message || "Failed to fetch tests");
-    }
-    set({ isLoadingRounds: false });
-  },
+  set({ isLoadingRounds: true });
+  try {
+    // This hits http://localhost:5004/api/tests/get-tests
+    const res = await axiosInstance.post("/tests/get-tests", { id }); 
+    set({ tests: res.data });
+  } catch (error) {
+    console.error("Error:", error);
+  }
+  set({ isLoadingRounds: false });
+},
 }));

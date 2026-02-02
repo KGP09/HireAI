@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const qnASchema = new mongoose.Schema({
+const questionSchema = new mongoose.Schema({
   question: String,
   options: [String],
   correctAnswer: String,
@@ -19,7 +19,8 @@ const roundSchema = new mongoose.Schema({
     ],
   },
   isScorable: Boolean,
-  qnASchema: [qnASchema],
+  questions: [questionSchema],
+  status: Boolean,
   score: Number,
   feedback: String,
 });

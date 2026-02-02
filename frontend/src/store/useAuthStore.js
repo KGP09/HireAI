@@ -29,7 +29,6 @@ export const useAuthStore = create((set, get) => ({
     }
   },
   signup: async (data) => {
-    // set({ isSigningUp: true });
     try {
       console.log("Signup Response: ", data);
       const res = await axiosInstance.post("/auth/signup", data);
@@ -39,8 +38,6 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       console.log("Toast Error!");
       toast.error(error.response.data.message);
-    } finally {
-      // set({ isSigningUp: false });
     }
   },
 

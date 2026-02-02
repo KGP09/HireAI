@@ -1,13 +1,27 @@
 import TestCard from "./TestCard";
-import { useAuthStore } from "../store/useAuthStore"; 
-// Assuming you have an auth store to get user ID
+import { useAuthStore } from "../store/useAuthStore";
+import { Outlet, useLocation } from "react-router-dom";
+
 const Practise = () => {
-  const {authUser} = useAuthStore();
-  const id = authUser._id 
+  const { authUser } = useAuthStore();
+  const location = useLocation();
+  const id = authUser?._id;
+
+  // Check if we are currently at the base "/practice" route
+  const isBasePracticeRoute =
+    location.pathname === "/practice" || location.pathname === "/practice/";
+
   return (
     <div className="min-h-screen p-6">
-      <h1 className="text-2xl font-bold mb-4 text-center">Your Tests</h1>
-      <TestCard id={id} />
+      {isBasePracticeRoute ? (
+        <>
+          <h1 className="text-2xl font-bold mb-4 text-center">Your Tests</h1>
+          <TestCard id={id} />
+        </>
+      ) : (
+        /* This renders when you are at /practice/aptitude */
+        <Outlet />
+      )}
     </div>
   );
 };

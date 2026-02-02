@@ -12,7 +12,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@langchain/mistralai": "^0.2.1",
+    "@langchain/core": "^1.1.15",
+    "@langchain/mistralai": "^0.2.3",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.6.1",
     "cookie-parser": "^1.4.7",
