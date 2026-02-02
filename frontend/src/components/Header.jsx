@@ -24,6 +24,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet";
 import { cn } from "../lib/utils";
+import { NavLink } from "../components/NavLink";
 
 const navLinks = [
   { to: "/create", label: "Create", icon: Sparkles },
@@ -55,6 +56,7 @@ export default function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => {
+              //   <NavLink to={link.to} icon={link.icon} label={link.label} />;
               const isActive = location.pathname === link.to;
               return (
                 <Link
