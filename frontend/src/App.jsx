@@ -24,6 +24,7 @@ import Practise from "./components/Practise";
 import Explore from "./components/Explore";
 import Profile from "./components/Profile";
 import Aptitude from "./pages/Aptitude";
+import InterviewPage from "./pages/InterviewPage";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,7 @@ const App = () => {
               <Route path="explore" element={<Explore />} />
               <Route path="profile" element={<Profile />} />
               <Route path="aptitude/:index" element={<Aptitude />} />
+              <Route path="/interviews" element={<InterviewPage />} />
             </Route>
 
             {/* Public Routes - Uncomment when you have login/signup pages: */}

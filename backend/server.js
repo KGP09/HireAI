@@ -15,6 +15,7 @@ import aiRoutes from "./routes/ai.routes.js";
 import testRoutes from "./routes/tests.routes.js";
 import cookieParser from "cookie-parser";
 import { app, server } from "./utils/socket.io.js";
+
 dotenv.config();
 const PORT = process.env.PORT;
 app.use(express.json({ limit: "10mb" })); // Adjust the limit as per your requirement

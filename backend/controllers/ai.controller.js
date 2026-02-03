@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import { ChatMistralAI } from "@langchain/mistralai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import User from "../models/user.model.js";
+import { Ollama } from "ollama";
 export const createTest = async (req, res) => {
   const llm = new ChatMistralAI({
     temperature: 0.7,
@@ -121,5 +122,48 @@ INPUT:
   } catch (error) {
     console.log("Error generating interview questions:", error.message);
     return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const getNextQuestion = async (req, res) => {
+  try {
+    const { userResponse, jobDescription, history = [] } = req.body;
+
+    if (!userResponse) {
+      return res.status(400).json({ message: "User response is required" });
+    }
+
+    // 1. Initialize the client
+    const ollamaClient = new Ollama({ host: 'http://127.0.0.1:11434' });
+
+    // 2. Prepare the messages
+    const messages = [
+      {
+        role: 'system',
+        content: `You are a strict technical interviewer for a ${jobDescription} role. 
+        Analyze the user's answer and ask ONE specific, challenging follow-up question. 
+        Keep your response under 25 words.`
+      },
+      ...history, 
+      { role: 'user', content: userResponse }
+    ];
+
+    // 3. Call the chat method on the instance
+    const response = await ollamaClient.chat({
+      model: 'llama3', 
+      messages: messages,
+    });
+
+    return res.status(200).json({ 
+      question: response.message.content 
+    });
+
+  } catch (error) {
+    // This will catch if llama3 isn't pulled or Ollama is off
+    console.error("Detailed AI Error:", error);
+    return res.status(500).json({ 
+      message: "AI Agent Error", 
+      error: error.message 
+    });
   }
 };
