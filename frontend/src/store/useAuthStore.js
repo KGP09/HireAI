@@ -41,34 +41,54 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  login: async (data) => {
-    try {
-      console.log(data);
-      const res = await axiosInstance.post("/auth/login", data);
-      set({ authUser: res.data });
-      toast.success("Logged In!");
-      get().connectSocket();
-    } catch (error) {
-      console.log(error);
-      toast.error("Invalid Credentials!");
-    }
-  },
+  // login: async (data) => {
+  //   try {
+  //     console.log(data);
+  //     const res = await axiosInstance.post("/auth/login", data);
+  //     set({ authUser: res.data });
+  //     toast.success("Logged In!");
+  //     get().connectSocket();
+  //   } catch (error) {
+  //     console.log(error);
+  //     toast.error("Invalid Credentials!");
+  //   }
+  // },
+  // Inside your useAuthStore.js
+login: async (data) => {
+  set({ isLoggingIn: true });
+  try {
+    const res = await axiosInstance.post("/auth/login", data);
+    
+    // SAVE TO LOCAL STORAGE IMMEDIATELY
+    localStorage.setItem("userId", res.data._id);
+    localStorage.setItem("userEmail", res.data.mail); // Use 'mail' from your backend res
+
+    set({ authUser: res.data });
+    toast.success("Logged in successfully");
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Login failed");
+  } finally {
+    set({ isLoggingIn: false });
+  }
+},
   logout: async () => {
-    try {
-      console.log("logout called");
-      // Call the backend logout endpoint
-      await axiosInstance.post("/auth/logout");
-
-      // Clear the local authUser state to log the user out
-      set({ authUser: null });
-
-      // Optionally redirect the user to the login page (if using React Router)
-      window.location.href = "/login"; // Or use React Router's `navigate('/login')`
-      get.disconnectSocket();
-    } catch (error) {
-      console.log("Logout Error with Axios Instance:", error);
-    }
-  },
+  try {
+    // 1. Call backend to clear the cookie
+    await axiosInstance.post("/auth/logout");
+    
+    // 2. Clear local storage
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userEmail");
+    
+    // 3. Reset Zustand state
+    set({ authUser: null });
+    
+    toast.success("Logged out successfully");
+  } catch (error) {
+    console.error("Logout error:", error);
+    toast.error("Failed to logout");
+  }
+},
 
   updateProfile: async (data) => {
     set({ isUpdatingProfile: true });

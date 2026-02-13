@@ -14,8 +14,6 @@ import { Loader } from "lucide-react";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-
-// Placeholder components - replace with your actual imports
 import { useAuthStore } from "./store/useAuthStore";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -25,6 +23,8 @@ import Explore from "./components/Explore";
 import Profile from "./components/Profile";
 import Aptitude from "./pages/Aptitude";
 import InterviewPage from "./pages/InterviewPage";
+import ResultsPage from "./pages/ResultsPage";
+import HistoryPage from "./pages/HistoryPage";
 
 const queryClient = new QueryClient();
 
@@ -36,7 +36,6 @@ const queryClient = new QueryClient();
 // });
 
 const App = () => {
-  // Uncomment when you have your auth store:
   const { checkAuth, authUser, isCheckingAuth } = useAuthStore();
   useEffect(() => {
     checkAuth();
@@ -73,16 +72,22 @@ const App = () => {
               }
             >
               <Route index element={<Index />} />
-              {/* Uncomment as you add these components: */}
               <Route path="create" element={<PromtComponent />} />
               <Route path="practice" element={<Practise />} />
               <Route path="explore" element={<Explore />} />
               <Route path="profile" element={<Profile />} />
               <Route path="aptitude/:index" element={<Aptitude />} />
               <Route path="/interviews" element={<InterviewPage />} />
+              <Route
+                path="/results"
+                element={authUser ? <ResultsPage /> : <Navigate to="/login" />}
+              />
+              <Route
+                path="/history"
+                element={authUser ? <HistoryPage /> : <Navigate to="/login" />}
+              />
             </Route>
 
-            {/* Public Routes - Uncomment when you have login/signup pages: */}
             <Route
               path="/signup"
               element={!authUser ? <SignupPage /> : <Navigate to="/" />}

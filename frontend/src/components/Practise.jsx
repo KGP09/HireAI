@@ -7,7 +7,6 @@ const Practise = () => {
   const location = useLocation();
   const id = authUser?._id;
 
-  // Check if we are currently at the base "/practice" route
   const isBasePracticeRoute =
     location.pathname === "/practice" || location.pathname === "/practice/";
 

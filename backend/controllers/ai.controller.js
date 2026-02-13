@@ -3,6 +3,8 @@ import { ChatMistralAI } from "@langchain/mistralai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import User from "../models/user.model.js";
 import { Ollama } from "ollama";
+import History from "../Models/history.model.js";
+
 export const createTest = async (req, res) => {
   const llm = new ChatMistralAI({
     temperature: 0.7,
@@ -125,6 +127,49 @@ INPUT:
   }
 };
 
+// export const getNextQuestion = async (req, res) => {
+//   try {
+//     const { userResponse, jobDescription, history = [] } = req.body;
+
+//     if (!userResponse) {
+//       return res.status(400).json({ message: "User response is required" });
+//     }
+
+//     // 1. Initialize the client
+//     const ollamaClient = new Ollama({ host: 'http://127.0.0.1:11434' });
+
+//     // 2. Prepare the messages
+//     const messages = [
+//       {
+//         role: 'system',
+//         content: `You are a strict technical interviewer for a ${jobDescription} role. 
+//         Analyze the user's answer and ask ONE specific, challenging follow-up question. 
+//         Keep your response under 25 words.`
+//       },
+//       ...history, 
+//       { role: 'user', content: userResponse }
+//     ];
+
+//     // 3. Call the chat method on the instance
+//     const response = await ollamaClient.chat({
+//       model: 'llama3', 
+//       messages: messages,
+//     });
+
+//     return res.status(200).json({ 
+//       question: response.message.content 
+//     });
+
+//   } catch (error) {
+//     // This will catch if llama3 isn't pulled or Ollama is off
+//     console.error("Detailed AI Error:", error);
+//     return res.status(500).json({ 
+//       message: "AI Agent Error", 
+//       error: error.message 
+//     });
+//   }
+// };
+
 export const getNextQuestion = async (req, res) => {
   try {
     const { userResponse, jobDescription, history = [] } = req.body;
@@ -133,33 +178,54 @@ export const getNextQuestion = async (req, res) => {
       return res.status(400).json({ message: "User response is required" });
     }
 
-    // 1. Initialize the client
+    // 1. Calculate depth to give the AI a 'nudge' if the interview is getting long
+    const turnCount = history.filter(m => m.role === 'user').length;
+    let timingInstruction = "Keep the interview going with deep technical questions.";
+    
+    if (turnCount >= 5) {
+      timingInstruction = "You have enough information. If the user's last answer was sufficient, wrap up the interview now.";
+    }
+
     const ollamaClient = new Ollama({ host: 'http://127.0.0.1:11434' });
 
-    // 2. Prepare the messages
+    // 2. Updated System Prompt for "Dynamic Termination"
     const messages = [
       {
         role: 'system',
-        content: `You are a strict technical interviewer for a ${jobDescription} role. 
-        Analyze the user's answer and ask ONE specific, challenging follow-up question. 
-        Keep your response under 25 words.`
+        content: `You are a professional technical interviewer for a ${jobDescription} role.
+
+        STRICT INSTRUCTIONS:
+        - Do NOT repeat, summarize, or give feedback on the user's answer.
+        - Move immediately to the next topic or follow-up.
+        - ${timingInstruction}
+        - If continuing: Ask EXACTLY ONE specific technical question. No "Great job" or "That's correct" filler.
+        - If ending: Start with "[FINISH]" then a 1-sentence closing.
+        - MAX LENGTH: 25 words. Be brief and direct.`
       },
       ...history, 
       { role: 'user', content: userResponse }
     ];
 
-    // 3. Call the chat method on the instance
     const response = await ollamaClient.chat({
       model: 'llama3', 
       messages: messages,
     });
 
+    const aiContent = response.message.content;
+
+    // 3. Check if the AI decided to end the interview
+    const isFinished = aiContent.includes("[FINISH]");
+
+    // Clean the message for the frontend (remove the hidden tag)
+    const cleanedQuestion = aiContent.replace("[FINISH]", "").trim();
+
     return res.status(200).json({ 
-      question: response.message.content 
+      question: cleanedQuestion,
+      isFinished: isFinished, // Frontend uses this to stop the chat and move to results
+      turnCount: turnCount + 1
     });
 
   } catch (error) {
-    // This will catch if llama3 isn't pulled or Ollama is off
     console.error("Detailed AI Error:", error);
     return res.status(500).json({ 
       message: "AI Agent Error", 
@@ -167,3 +233,81 @@ export const getNextQuestion = async (req, res) => {
     });
   }
 };
+
+export const analyzeInterview = async (req, res) => {
+  try {
+    const { chatHistory, jobDescription, id } = req.body; // Added 'id' to find the user
+
+    if (!id) {
+      return res.status(400).json({ message: "User ID is required to save results" });
+    }
+
+    const llm = new ChatMistralAI({
+      temperature: 0.3,
+      apiKey: process.env.MISTRAL_API_KEY,
+    });
+
+    const analysisPrompt = `
+      You are a Senior Technical Recruiter. Analyze the following interview transcript for a ${jobDescription} role:
+      ${JSON.stringify(chatHistory)}
+
+      Provide a performance report in JSON format:
+      {
+        "overallScore": number,
+        "strengths": [string],
+        "weaknesses": [string],
+        "feedback": string,
+        "status": "Pass" | "Fail"
+      }
+      Only return raw JSON. No markdown backticks.
+    `;
+
+    const response = await llm.invoke(analysisPrompt);
+    const rawContent = response?.content || ""; // Define it first
+console.log("Mistral Response Content:", rawContent);
+    // Improved Parsing to handle potential formatting junk
+    const match = response.content.match(/{[\s\S]*}/);
+    if (!match) throw new Error("No JSON found in AI response");
+    
+    const report = JSON.parse(match[0]);
+
+    // --- PERSISTENCE LOGIC ---
+    // Option A: Save to a separate History collection (Cleanest for huge logs)
+    const newHistory = new History({
+      userEmail: req.body.email || "unknown", // Optional: if you pass email from frontend
+      role: jobDescription,
+      overallScore: report.overallScore,
+      strengths: report.strengths,
+      weaknesses: report.weaknesses,
+      feedback: report.feedback,
+      chatHistory: chatHistory,
+      date: new Date()
+    });
+    await newHistory.save();
+
+    // Option B: Also update the User document if you keep a 'tests' array there
+    const user = await User.findById(id);
+    if (user) {
+      // Create a test object that matches your createTest format
+      const completedTest = {
+        testName: `${jobDescription} Mock Interview`,
+        numberOfRounds: 1,
+        rounds: [{
+          description: "Live AI Interview",
+          roundType: "Technical Round",
+          score: report.overallScore,
+          feedback: report.feedback,
+          status: true // Mark as completed
+        }]
+      };
+      user.tests.push(completedTest);
+      await user.save();
+    }
+
+    return res.status(200).json(report);
+  } catch (error) {
+    console.error("Analysis Error:", error);
+    res.status(500).json({ message: "Failed to analyze interview", error: error.message });
+  }
+};
+

@@ -1,29 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   MessageCircle,
-  Calendar,
   Settings,
   Sparkles,
   TrendingUp,
-  Users,
-  Clock,
   ChevronRight,
   Zap,
   Target,
   Brain,
+  Clock,
+  Users,
 } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { axiosInstance } from "../lib/axios";
+import { useAuthStore } from "../store/useAuthStore"; // Added this import
 
 const container = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.1 },
   },
 };
 
@@ -31,18 +30,6 @@ const item = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0 },
 };
-
-const stats = [
-  {
-    label: "Interviews Completed",
-    value: "1,234",
-    icon: MessageCircle,
-    trend: "+12%",
-  },
-  { label: "Success Rate", value: "89%", icon: Target, trend: "+5%" },
-  { label: "Active Users", value: "567", icon: Users, trend: "+23%" },
-  { label: "Avg. Session", value: "24m", icon: Clock, trend: "-2m" },
-];
 
 const features = [
   {
@@ -61,10 +48,10 @@ const features = [
     gradient: "from-blue-500 to-cyan-500",
   },
   {
-    to: "/practice",
-    icon: Brain,
-    title: "Practice",
-    description: "Access your generated tests and improve your skills",
+    to: "/history",
+    icon: Clock,
+    title: "Interview History",
+    description: "Review your past performance and AI feedback transcripts",
     gradient: "from-emerald-500 to-teal-500",
   },
   {
@@ -77,14 +64,84 @@ const features = [
 ];
 
 export default function HomePage() {
+  const { authUser } = useAuthStore(); // Initialize auth store
+  const [realStats, setRealStats] = useState([
+    {
+      label: "Interviews Completed",
+      value: "0",
+      icon: MessageCircle,
+      trend: "0%",
+    },
+    { label: "Success Rate", value: "0%", icon: Target, trend: "0%" },
+    { label: "Latest Score", value: "N/A", icon: Zap, trend: "New" },
+    { label: "Avg. Score", value: "0", icon: TrendingUp, trend: "0%" },
+  ]);
+
+  useEffect(() => {
+    const getStats = async () => {
+      if (!authUser?._id) {
+        console.log("Waiting for user session...");
+        return;
+      }
+
+      try {
+        const res = await axiosInstance.get("/user/my-history");
+        const historyData = res.data;
+
+        if (historyData && historyData.length > 0) {
+          const totalScore = historyData.reduce(
+            (acc, curr) => acc + (curr.feedback?.score || 0),
+            0,
+          );
+          const avgScore = Math.round(totalScore / historyData.length);
+          const successCount = historyData.filter(
+            (h) => h.feedback?.score >= 50,
+          ).length;
+          const successRate = Math.round(
+            (successCount / historyData.length) * 100,
+          );
+
+          setRealStats([
+            {
+              label: "Interviews Completed",
+              value: historyData.length.toString(),
+              icon: MessageCircle,
+              trend: `+${historyData.length}`,
+            },
+            {
+              label: "Success Rate",
+              value: `${successRate}%`,
+              icon: Target,
+              trend: successRate > 70 ? "High" : "Stable",
+            },
+            {
+              label: "Latest Score",
+              value: `${historyData[0].overallScore}%`,
+              icon: Zap,
+              trend: "Latest",
+            },
+            {
+              label: "Avg. Score",
+              value: avgScore.toString(),
+              icon: TrendingUp,
+              trend: avgScore > 50 ? "+Up" : "Steady",
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error("Error fetching dashboard stats:", err);
+      }
+    };
+
+    getStats();
+  }, [authUser]); // Re-run when authUser is loaded
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        {/* Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/10" />
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
         <div className="relative max-w-7xl mx-auto px-6 pt-12 pb-16">
           <motion.div
@@ -97,7 +154,7 @@ export default function HomePage() {
               <Zap className="w-4 h-4" />
               AI-Powered Interview Platform
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4 tracking-tight">
+            <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">
               Master Your Next
               <span className="block bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">
                 Interview
@@ -116,21 +173,19 @@ export default function HomePage() {
             animate="show"
             className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12"
           >
-            {stats.map((stat, index) => (
+            {realStats.map((stat) => (
               <motion.div key={stat.label} variants={item}>
                 <Card className="border-border/50 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-all duration-300">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <stat.icon className="w-5 h-5 text-muted-foreground" />
                       <span
-                        className={`text-xs font-medium ${stat.trend.startsWith("+") ? "text-emerald-500" : "text-muted-foreground"}`}
+                        className={`text-xs font-medium ${stat.trend.startsWith("+") || stat.trend === "High" ? "text-emerald-500" : "text-muted-foreground"}`}
                       >
                         {stat.trend}
                       </span>
                     </div>
-                    <p className="text-2xl font-bold text-foreground">
-                      {stat.value}
-                    </p>
+                    <p className="text-2xl font-bold">{stat.value}</p>
                     <p className="text-xs text-muted-foreground">
                       {stat.label}
                     </p>
@@ -150,17 +205,15 @@ export default function HomePage() {
           animate="show"
           className="grid grid-cols-1 md:grid-cols-2 gap-6"
         >
-          {features.map((feature, index) => (
+          {features.map((feature) => (
             <motion.div key={feature.title} variants={item}>
               <Link to={feature.to} className="block group">
                 <Card
                   className={`relative overflow-hidden border-border/50 h-full transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 ${feature.primary ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground" : "bg-card hover:bg-accent/50"}`}
                 >
-                  {/* Decorative gradient blob */}
                   <div
                     className={`absolute -right-8 -top-8 w-32 h-32 rounded-full bg-gradient-to-br ${feature.gradient} opacity-20 blur-2xl group-hover:opacity-40 transition-opacity duration-500`}
                   />
-
                   <CardContent className="relative p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -171,9 +224,7 @@ export default function HomePage() {
                             className={`w-6 h-6 ${feature.primary ? "text-primary-foreground" : "text-white"}`}
                           />
                         </div>
-                        <h3
-                          className={`text-xl font-semibold mb-2 ${feature.primary ? "text-primary-foreground" : "text-foreground"}`}
-                        >
+                        <h3 className="text-xl font-semibold mb-2">
                           {feature.title}
                         </h3>
                         <p
@@ -182,41 +233,13 @@ export default function HomePage() {
                           {feature.description}
                         </p>
                       </div>
-                      <ChevronRight
-                        className={`w-5 h-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ${feature.primary ? "text-primary-foreground" : "text-muted-foreground"}`}
-                      />
+                      <ChevronRight className="w-5 h-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
                     </div>
                   </CardContent>
                 </Card>
               </Link>
             </motion.div>
           ))}
-        </motion.div>
-
-        {/* Quick Action CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="mt-12 text-center"
-        >
-          <Card className="border-dashed border-2 border-border bg-muted/30">
-            <CardContent className="py-8">
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                Ready to ace your interview?
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Start practicing with AI-generated questions tailored to your
-                role.
-              </p>
-              <Button asChild size="lg" className="gap-2">
-                <Link to="/create">
-                  <Sparkles className="w-4 h-4" />
-                  Create Your First Test
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
         </motion.div>
       </div>
     </div>
