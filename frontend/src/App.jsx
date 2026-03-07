@@ -25,6 +25,8 @@ import Aptitude from "./pages/Aptitude";
 import InterviewPage from "./pages/InterviewPage";
 import ResultsPage from "./pages/ResultsPage";
 import HistoryPage from "./pages/HistoryPage";
+import Telephonic from "./pages/Telephonic";
+import TelephonicSetup from "./pages/TelephonicSetup";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +89,8 @@ const App = () => {
                 element={authUser ? <HistoryPage /> : <Navigate to="/login" />}
               />
             </Route>
+            <Route path="/telephonic-setup" element={<TelephonicSetup />} />
+            <Route path="/telephonic" element={<Telephonic />} />
 
             <Route
               path="/signup"

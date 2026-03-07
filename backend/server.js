@@ -19,8 +19,8 @@ import userRoutes from "./routes/user.routes.js";
 
 dotenv.config();
 const PORT = process.env.PORT;
-app.use(express.json({ limit: "10mb" })); // Adjust the limit as per your requirement
-app.use(express.urlencoded({ limit: "10mb", extended: true })); // Adjust the limit as per your requirement
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cookieParser());
 app.use(
   cors({
@@ -32,6 +32,17 @@ app.use("/api/auth", authRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/tests", testRoutes);
 app.use("/api/user", userRoutes);
+
+// console.log("Registered Routes:");
+// app._router.stack.forEach((r) => {
+//   if (r.route && r.route.path) console.log(`Route: ${r.route.path}`);
+//   if (r.name === 'router') {
+//     r.handle.stack.forEach((handler) => {
+//       if (handler.route) console.log(`Nested Route: ${handler.route.path}`);
+//     });
+//   }
+// });
+
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   Db();

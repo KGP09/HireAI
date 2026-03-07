@@ -14,6 +14,8 @@
   "dependencies": {
     "@langchain/core": "^1.1.15",
     "@langchain/mistralai": "^0.2.3",
+    "assemblyai": "^4.26.1",
+    "axios": "^1.13.6",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.6.1",
     "cookie-parser": "^1.4.7",
@@ -24,6 +26,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.17.0",
     "mongoose": "^8.16.1",
+    "multer": "^2.1.1",
+    "node-record-lpcm16": "^1.0.1",
     "nodemon": "^3.1.10",
     "ollama": "^0.6.3",
     "socket.io": "^4.8.1"

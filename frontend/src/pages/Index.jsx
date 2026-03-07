@@ -9,237 +9,254 @@ import {
   ChevronRight,
   Zap,
   Target,
-  Brain,
   Clock,
-  Users,
+  LayoutDashboard,
+  ShieldCheck,
+  BrainCircuit,
+  ArrowUpRight,
+  Video,
+  Phone, // Added Phone for Telephonic
 } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
-import { Button } from "../components/ui/button";
+import { useAuthStore } from "../store/useAuthStore";
 import { axiosInstance } from "../lib/axios";
-import { useAuthStore } from "../store/useAuthStore"; // Added this import
 
+// Animation Variants (Keep these as they are)
 const container = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 },
+    transition: { staggerChildren: 0.1, delayChildren: 0.3 },
   },
 };
 
 const item = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
-const features = [
-  {
-    to: "/create",
-    icon: Sparkles,
-    title: "Create Test",
-    description: "Generate AI-powered interview rounds tailored to any role",
-    gradient: "from-violet-500 to-purple-600",
-    primary: true,
-  },
-  {
-    to: "/interviews",
-    icon: MessageCircle,
-    title: "Start Interview",
-    description: "View and begin mock interviews assigned to you",
-    gradient: "from-blue-500 to-cyan-500",
-  },
-  {
-    to: "/history",
-    icon: Clock,
-    title: "Interview History",
-    description: "Review your past performance and AI feedback transcripts",
-    gradient: "from-emerald-500 to-teal-500",
-  },
-  {
-    to: "/settings",
-    icon: Settings,
-    title: "Settings",
-    description: "Manage your profile and preferences",
-    gradient: "from-orange-500 to-amber-500",
-  },
-];
-
 export default function HomePage() {
-  const { authUser } = useAuthStore(); // Initialize auth store
+  const { authUser } = useAuthStore();
   const [realStats, setRealStats] = useState([
     {
-      label: "Interviews Completed",
+      label: "Completed",
       value: "0",
-      icon: MessageCircle,
-      trend: "0%",
+      icon: ShieldCheck,
+      color: "text-blue-500",
     },
-    { label: "Success Rate", value: "0%", icon: Target, trend: "0%" },
-    { label: "Latest Score", value: "N/A", icon: Zap, trend: "New" },
-    { label: "Avg. Score", value: "0", icon: TrendingUp, trend: "0%" },
+    {
+      label: "Success Rate",
+      value: "0%",
+      icon: Target,
+      color: "text-emerald-500",
+    },
+    { label: "Latest Score", value: "N/A", icon: Zap, color: "text-amber-500" },
+    {
+      label: "Skill Level",
+      value: "Novice",
+      icon: BrainCircuit,
+      color: "text-purple-500",
+    },
   ]);
 
   useEffect(() => {
-    const getStats = async () => {
-      if (!authUser?._id) {
-        console.log("Waiting for user session...");
-        return;
-      }
-
+    const fetchDashboardData = async () => {
+      if (!authUser?._id) return;
       try {
         const res = await axiosInstance.get("/user/my-history");
-        const historyData = res.data;
-
-        if (historyData && historyData.length > 0) {
-          const totalScore = historyData.reduce(
+        const history = res.data;
+        if (history?.length > 0) {
+          const totalScore = history.reduce(
             (acc, curr) => acc + (curr.feedback?.score || 0),
             0,
           );
-          const avgScore = Math.round(totalScore / historyData.length);
-          const successCount = historyData.filter(
-            (h) => h.feedback?.score >= 50,
-          ).length;
-          const successRate = Math.round(
-            (successCount / historyData.length) * 100,
-          );
-
+          const avg = Math.round(totalScore / history.length);
           setRealStats([
             {
-              label: "Interviews Completed",
-              value: historyData.length.toString(),
-              icon: MessageCircle,
-              trend: `+${historyData.length}`,
+              label: "Completed",
+              value: history.length.toString(),
+              icon: ShieldCheck,
+              color: "text-blue-400",
             },
             {
               label: "Success Rate",
-              value: `${successRate}%`,
+              value: `${Math.round((history.filter((h) => h.feedback?.score >= 60).length / history.length) * 100)}%`,
               icon: Target,
-              trend: successRate > 70 ? "High" : "Stable",
+              color: "text-emerald-400",
             },
             {
               label: "Latest Score",
-              value: `${historyData[0].overallScore}%`,
+              value: `${history[0].feedback?.score || 0}%`,
               icon: Zap,
-              trend: "Latest",
+              color: "text-amber-400",
             },
             {
-              label: "Avg. Score",
-              value: avgScore.toString(),
-              icon: TrendingUp,
-              trend: avgScore > 50 ? "+Up" : "Steady",
+              label: "Skill Level",
+              value: avg > 75 ? "Expert" : avg > 50 ? "Inter" : "Novice",
+              icon: BrainCircuit,
+              color: "text-purple-400",
             },
           ]);
         }
       } catch (err) {
-        console.error("Error fetching dashboard stats:", err);
+        console.error("Dashboard error:", err);
       }
     };
-
-    getStats();
-  }, [authUser]); // Re-run when authUser is loaded
+    fetchDashboardData();
+  }, [authUser]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/10" />
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-
-        <div className="relative max-w-7xl mx-auto px-6 pt-12 pb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-              <Zap className="w-4 h-4" />
-              AI-Powered Interview Platform
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">
-              Master Your Next
-              <span className="block bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent">
-                Interview
-              </span>
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Practice with AI-generated interviews, get instant feedback, and
-              land your dream job with confidence.
-            </p>
-          </motion.div>
-
-          {/* Stats Grid */}
-          <motion.div
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12"
-          >
-            {realStats.map((stat) => (
-              <motion.div key={stat.label} variants={item}>
-                <Card className="border-border/50 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-all duration-300">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <stat.icon className="w-5 h-5 text-muted-foreground" />
-                      <span
-                        className={`text-xs font-medium ${stat.trend.startsWith("+") || stat.trend === "High" ? "text-emerald-500" : "text-muted-foreground"}`}
-                      >
-                        {stat.trend}
-                      </span>
-                    </div>
-                    <p className="text-2xl font-bold">{stat.value}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {stat.label}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
+    <div className="min-h-screen bg-[#030711] text-slate-200 selection:bg-blue-500/30">
+      {/* Background Mesh */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-purple-600/10 rounded-full blur-[120px]" />
       </div>
 
-      {/* Features Section */}
-      <div className="max-w-7xl mx-auto px-6 pb-16">
+      <div className="relative max-w-7xl mx-auto px-6 py-12">
+        {/* Header */}
+        <header className="mb-16 text-left">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-2 text-blue-400 font-mono text-xs mb-4 tracking-widest uppercase"
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            Candidate Dashboard v2.0
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-5xl md:text-7xl font-black tracking-tighter mb-6 bg-gradient-to-r from-white via-slate-400 to-slate-800 bg-clip-text text-transparent"
+          >
+            Elevate Your <br />
+            <span className="text-white">Professional Persona.</span>
+          </motion.h1>
+          <p className="text-slate-400 max-w-xl text-lg leading-relaxed">
+            Multi-modal interview simulations powered by adaptive AI. Practice
+            video or voice rounds with real-time evaluation.
+          </p>
+        </header>
+
+        {/* Stats Grid */}
         <motion.div
           variants={container}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12"
         >
-          {features.map((feature) => (
-            <motion.div key={feature.title} variants={item}>
-              <Link to={feature.to} className="block group">
-                <Card
-                  className={`relative overflow-hidden border-border/50 h-full transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 ${feature.primary ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground" : "bg-card hover:bg-accent/50"}`}
-                >
-                  <div
-                    className={`absolute -right-8 -top-8 w-32 h-32 rounded-full bg-gradient-to-br ${feature.gradient} opacity-20 blur-2xl group-hover:opacity-40 transition-opacity duration-500`}
-                  />
-                  <CardContent className="relative p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div
-                          className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 ${feature.primary ? "bg-primary-foreground/20" : `bg-gradient-to-br ${feature.gradient}`}`}
-                        >
-                          <feature.icon
-                            className={`w-6 h-6 ${feature.primary ? "text-primary-foreground" : "text-white"}`}
-                          />
-                        </div>
-                        <h3 className="text-xl font-semibold mb-2">
-                          {feature.title}
-                        </h3>
-                        <p
-                          className={`text-sm ${feature.primary ? "text-primary-foreground/80" : "text-muted-foreground"}`}
-                        >
-                          {feature.description}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+          {realStats.map((stat, idx) => (
+            <motion.div key={idx} variants={item}>
+              <Card className="bg-white/[0.03] border-white/5 backdrop-blur-md hover:border-white/20 transition-all duration-500 group">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div
+                      className={`p-2 rounded-lg bg-slate-900 border border-white/5 ${stat.color}`}
+                    >
+                      <stat.icon className="w-5 h-5" />
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                    <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <h3 className="text-3xl font-mono font-bold text-white mb-1">
+                    {stat.value}
+                  </h3>
+                  <p className="text-xs uppercase tracking-widest text-slate-500 font-bold">
+                    {stat.label}
+                  </p>
+                </CardContent>
+              </Card>
             </motion.div>
           ))}
+        </motion.div>
+
+        {/* Action Bento Grid */}
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-6 gap-6"
+        >
+          {/* VIDEO MODE: 3-column span */}
+          <Link to="/interviews" className="md:col-span-3 group">
+            <motion.div
+              variants={item}
+              className="relative h-full overflow-hidden rounded-[2rem] bg-gradient-to-br from-blue-600 to-indigo-800 p-8 shadow-2xl transition-transform hover:scale-[1.01] active:scale-[0.99]"
+            >
+              <div className="absolute right-0 bottom-0 w-48 h-48 bg-white/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 group-hover:bg-white/20 transition-all" />
+              <Video className="w-10 h-10 text-white/50 mb-6 group-hover:scale-110 transition-transform duration-500" />
+              <h2 className="text-2xl font-bold text-white mb-2">
+                Video Simulation
+              </h2>
+              <p className="text-blue-100/70 text-sm mb-8">
+                Full-stack environment with webcam tracking and technical
+                deep-dives.
+              </p>
+              <div className="flex items-center gap-2 text-white font-bold text-[10px] bg-black/20 w-fit px-4 py-2 rounded-full backdrop-blur-md uppercase tracking-widest">
+                Launch Visual Node <ChevronRight className="w-4 h-4" />
+              </div>
+            </motion.div>
+          </Link>
+
+          {/* TELEPHONIC MODE: 3-column span */}
+          <Link to="/telephonic-setup" className="md:col-span-3 group">
+            <motion.div
+              variants={item}
+              className="relative h-full overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-600 to-teal-800 p-8 shadow-2xl transition-transform hover:scale-[1.01] active:scale-[0.99]"
+            >
+              <div className="absolute right-0 bottom-0 w-48 h-48 bg-white/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 group-hover:bg-white/20 transition-all" />
+              <Phone className="w-10 h-10 text-white/50 mb-6 group-hover:scale-110 transition-transform duration-500" />
+              <h2 className="text-2xl font-bold text-white mb-2">
+                Telephonic Node
+              </h2>
+              <p className="text-emerald-100/70 text-sm mb-8">
+                Audio-only assessment focusing on verbal articulation and logic.
+              </p>
+              <div className="flex items-center gap-2 text-white font-bold text-[10px] bg-black/20 w-fit px-4 py-2 rounded-full backdrop-blur-md uppercase tracking-widest text-emerald-100">
+                Connect Aural Node <ChevronRight className="w-4 h-4" />
+              </div>
+            </motion.div>
+          </Link>
+
+          {/* Row 2: Smaller Cards (History & Config) */}
+          <Link to="/history" className="md:col-span-2 group">
+            <motion.div
+              variants={item}
+              className="h-full rounded-[2rem] border border-white/5 bg-slate-900/50 p-8 backdrop-blur-sm hover:bg-slate-900 transition-colors"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-6 border border-amber-500/20">
+                <Clock className="text-amber-400 w-6 h-6" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">Archive</h2>
+              <p className="text-slate-500 text-sm mb-6">
+                Review performance logs and transcript metrics.
+              </p>
+              <div className="text-amber-400 text-xs font-mono flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                OPEN LOGS <ArrowUpRight className="w-3 h-3" />
+              </div>
+            </motion.div>
+          </Link>
+
+          <Link to="/create" className="md:col-span-4 group">
+            <motion.div
+              variants={item}
+              className="h-full rounded-[2rem] border border-white/5 bg-slate-900/50 p-8 backdrop-blur-sm hover:bg-slate-900 transition-colors flex items-center justify-between"
+            >
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6 border border-purple-500/20">
+                  <BrainCircuit className="text-purple-400 w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">
+                  Configure Agent
+                </h2>
+                <p className="text-slate-500 text-sm">
+                  Define custom roles, difficulty curves, and LLM persona.
+                </p>
+              </div>
+              <div className="p-6 bg-white/5 rounded-3xl group-hover:bg-blue-500/10 transition-colors">
+                <Settings className="text-slate-400 group-hover:text-white group-hover:rotate-90 transition-all duration-700" />
+              </div>
+            </motion.div>
+          </Link>
         </motion.div>
       </div>
     </div>
