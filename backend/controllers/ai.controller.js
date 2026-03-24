@@ -5,6 +5,7 @@ import User from "../models/user.model.js";
 import { Ollama } from "ollama";
 import History from "../Models/history.model.js";
 import axios from "axios";
+import { AssemblyAI } from 'assemblyai';
 dotenv.config();
 
 export const createTest = async (req, res) => {
@@ -129,120 +130,183 @@ INPUT:
   }
 };
 
-// export const getNextQuestion = async (req, res) => {
-//   try {
-//     const { userResponse, jobDescription, history = [] } = req.body;
-
-//     if (!userResponse) {
-//       return res.status(400).json({ message: "User response is required" });
-//     }
-
-//     // 1. Initialize the client
-//     const ollamaClient = new Ollama({ host: 'http://127.0.0.1:11434' });
-
-//     // 2. Prepare the messages
-//     const messages = [
-//       {
-//         role: 'system',
-//         content: `You are a strict technical interviewer for a ${jobDescription} role. 
-//         Analyze the user's answer and ask ONE specific, challenging follow-up question. 
-//         Keep your response under 25 words.`
-//       },
-//       ...history, 
-//       { role: 'user', content: userResponse }
-//     ];
-
-//     // 3. Call the chat method on the instance
-//     const response = await ollamaClient.chat({
-//       model: 'llama3', 
-//       messages: messages,
-//     });
-
-//     return res.status(200).json({ 
-//       question: response.message.content 
-//     });
-
-//   } catch (error) {
-//     // This will catch if llama3 isn't pulled or Ollama is off
-//     console.error("Detailed AI Error:", error);
-//     return res.status(500).json({ 
-//       message: "AI Agent Error", 
-//       error: error.message 
-//     });
-//   }
-// };
-
 export const getNextQuestion = async (req, res) => {
   try {
-    const { userResponse, jobDescription, history = [] } = req.body;
+    const {
+      userResponse = "",
+      jobDescription,
+      history = [],
+      preferences = {},
+      isInitialPrompt = false,
+    } = req.body;
 
-    if (!userResponse) {
+    if (!jobDescription) {
+      return res.status(400).json({ message: "Job description is required" });
+    }
+
+    const normalizedHistory = Array.isArray(history) ? history : [];
+    const safeUserResponse =
+      typeof userResponse === "string" ? userResponse.trim() : "";
+
+    if (!isInitialPrompt && !safeUserResponse) {
       return res.status(400).json({ message: "User response is required" });
     }
 
-    // 1. Calculate depth to give the AI a 'nudge' if the interview is getting long
-    const turnCount = history.filter(m => m.role === 'user').length;
-    let timingInstruction = "Keep the interview going with deep technical questions.";
-    
-    if (turnCount >= 5) {
-      timingInstruction = "You have enough information. If the user's last answer was sufficient, wrap up the interview now.";
+    const lastHistoryItem = normalizedHistory[normalizedHistory.length - 1];
+    const hasLatestUserInHistory =
+      lastHistoryItem?.role === "user" &&
+      typeof lastHistoryItem?.content === "string" &&
+      lastHistoryItem.content.trim() === safeUserResponse;
+
+    const userTurnsInHistory = normalizedHistory.filter(
+      (message) => message.role === "user",
+    ).length;
+
+    const turnCount = isInitialPrompt
+      ? userTurnsInHistory
+      : userTurnsInHistory + (hasLatestUserInHistory ? 0 : 1);
+
+    const targetLength = String(
+      preferences?.targetLength || "standard",
+    ).toLowerCase();
+    const pacingByLength = {
+      short: { minTurnsBeforeFinish: 3, softWrapUpAt: 5 },
+      standard: { minTurnsBeforeFinish: 5, softWrapUpAt: 7 },
+      deep: { minTurnsBeforeFinish: 7, softWrapUpAt: 10 },
+    };
+    const pacingRule = pacingByLength[targetLength] || pacingByLength.standard;
+
+    let timingInstruction =
+      "Continue with one targeted follow-up question that explores depth.";
+
+    if (isInitialPrompt) {
+      timingInstruction =
+        "Start the interview now with one strong opening question.";
+    } else if (turnCount < pacingRule.minTurnsBeforeFinish) {
+      timingInstruction = `Do not end the interview yet. Gather at least ${pacingRule.minTurnsBeforeFinish} candidate answers before finishing.`;
+    } else if (turnCount >= pacingRule.softWrapUpAt) {
+      timingInstruction =
+        "If you already have enough signal, end now. Otherwise ask one final high-value question.";
+    } else {
+      timingInstruction =
+        "You may continue or finish naturally based on interview quality and completeness.";
     }
 
-    const ollamaClient = new Ollama({ host: 'http://127.0.0.1:11434' });
+    const ollamaClient = new Ollama({ host: "http://127.0.0.1:11434" });
 
-    // 2. Updated System Prompt for "Dynamic Termination"
     const messages = [
       {
-        role: 'system',
-        content: `You are a professional technical interviewer for a ${jobDescription} role.
+        role: "system",
+        content: `You are a professional technical interviewer.
 
-        STRICT INSTRUCTIONS:
-        - Do NOT repeat, summarize, or give feedback on the user's answer.
-        - Move immediately to the next topic or follow-up.
-        - ${timingInstruction}
-        - If continuing: Ask EXACTLY ONE specific technical question. No "Great job" or "That's correct" filler.
-        - If ending: Start with "[FINISH]" then a 1-sentence closing.
-        - MAX LENGTH: 25 words. Be brief and direct.`
+INTERVIEW CONTEXT:
+- Role: ${jobDescription}
+- Seniority: ${preferences?.seniority || "Mid"}
+- Focus Area: ${preferences?.focusArea || "Balanced"}
+- Interviewer Tone: ${preferences?.interviewerStyle || "Challenging"}
+- Question Style: ${preferences?.questionStyle || "Scenario-led"}
+- Target Length: ${targetLength}
+
+STRICT INSTRUCTIONS:
+- Return ONLY valid JSON using this exact shape:
+  {"question":"<single complete question or one-line closing>","isFinished":false}
+- Set "isFinished" to true only when interview should end naturally.
+- Ask exactly one question at a time.
+- Do not give feedback, praise, or summaries while continuing.
+- ${timingInstruction}
+- Use the candidate's last answer to ask a context-aware follow-up.
+- Avoid repeating earlier questions or rephrasing the same topic.
+- Mix question types naturally (conceptual, scenario, debugging, tradeoff) based on Focus Area.
+- Increase depth gradually: start broad, then drill into specifics.
+- Never restate or summarize what the candidate already said.
+- End non-finish responses with a single "?".
+- If ending: start with "[FINISH]" and give a one-sentence closing.
+- If continuing: ask only the next question.
+- Keep it natural and interviewer-like. Do not truncate your question.`,
       },
-      ...history, 
-      { role: 'user', content: userResponse }
+      ...normalizedHistory,
     ];
 
+    if (!isInitialPrompt && !hasLatestUserInHistory) {
+      messages.push({ role: "user", content: safeUserResponse });
+    }
+
     const response = await ollamaClient.chat({
-      model: 'llama3', 
-      messages: messages,
+      model: "llama3",
+      messages,
+      format: "json",
       options: {
-      temperature: 0.4, // Lower = more focused and concise
-      num_predict: 50   // Limits the total output length at the model level
-    },
+        temperature: 0.4,
+        num_predict: 180,
+      },
     });
 
-    const aiContent = response.message.content;
+    const rawContent = String(response?.message?.content || "").trim();
+    let parsedResponse = null;
+    try {
+      parsedResponse = JSON.parse(rawContent);
+    } catch {
+      parsedResponse = null;
+    }
 
-    // 3. Check if the AI decided to end the interview
-    const isFinished = aiContent.includes("[FINISH]");
+    const aiContent = String(
+      parsedResponse?.question ||
+        rawContent ||
+        "Could you walk me through the tradeoffs in your approach?",
+    ).trim();
+    const requestedFinish =
+      Boolean(parsedResponse?.isFinished) || aiContent.includes("[FINISH]");
+    const canFinishNow = turnCount >= pacingRule.minTurnsBeforeFinish;
+    const isFinished = requestedFinish && canFinishNow;
 
-    // Clean the message for the frontend (remove the hidden tag)
-    const cleanedQuestion = aiContent.replace("[FINISH]", "").trim();
+    const stripMeta = (text) =>
+      text
+        .replace("[FINISH]", "")
+        .replace(/\s+/g, " ")
+        .trim();
 
-    return res.status(200).json({ 
+    const normalizeQuestion = (text) => {
+      const normalized = stripMeta(text);
+      if (!normalized) {
+        return "Can you walk me through the key tradeoffs in your last decision?";
+      }
+      let cleaned = normalized
+        .replace(/^.*?(here'?s your first question:)\s*/i, "")
+        .replace(/^let'?s get started\.\s*/i, "")
+        .trim();
+
+      // Remove surrounding quotes if model wraps output.
+      cleaned = cleaned.replace(/^["']|["']$/g, "").trim();
+
+      // Keep the full question text instead of slicing by words/line.
+      if (!cleaned.endsWith("?")) {
+        cleaned = `${cleaned.replace(/[.!]+$/g, "").trim()}?`;
+      }
+
+      return cleaned;
+    };
+
+    const cleanedQuestion = isFinished
+      ? stripMeta(aiContent) || "Thanks for your time. We will move to feedback."
+      : normalizeQuestion(aiContent);
+
+    return res.status(200).json({
       question: cleanedQuestion,
-      isFinished: isFinished, // Frontend uses this to stop the chat and move to results
-      turnCount: turnCount + 1
+      isFinished,
+      turnCount,
     });
-
   } catch (error) {
     console.error("Detailed AI Error:", error);
-    return res.status(500).json({ 
-      message: "AI Agent Error", 
-      error: error.message 
+    return res.status(500).json({
+      message: "AI Agent Error",
+      error: error.message,
     });
   }
 };
 
 export const analyzeInterview = async (req, res) => {
   try {
-    const { chatHistory, jobDescription, id } = req.body; // Added 'id' to find the user
+    const { chatHistory, jobDescription, id } = req.body;
 
     if (!id) {
       return res.status(400).json({ message: "User ID is required to save results" });
@@ -277,10 +341,9 @@ console.log("Mistral Response Content:", rawContent);
     
     const report = JSON.parse(match[0]);
 
-    // --- PERSISTENCE LOGIC ---
-    // Option A: Save to a separate History collection (Cleanest for huge logs)
+    
     const newHistory = new History({
-      userEmail: req.body.email || "unknown", // Optional: if you pass email from frontend
+      userEmail: req.body.email || "unknown",
       role: jobDescription,
       overallScore: report.overallScore,
       strengths: report.strengths,
@@ -291,10 +354,9 @@ console.log("Mistral Response Content:", rawContent);
     });
     await newHistory.save();
 
-    // Option B: Also update the User document if you keep a 'tests' array there
+    
     const user = await User.findById(id);
     if (user) {
-      // Create a test object that matches your createTest format
       const completedTest = {
         testName: `${jobDescription} Mock Interview`,
         numberOfRounds: 1,
@@ -303,7 +365,7 @@ console.log("Mistral Response Content:", rawContent);
           roundType: "Technical Round",
           score: report.overallScore,
           feedback: report.feedback,
-          status: true // Mark as completed
+          status: true 
         }]
       };
       user.tests.push(completedTest);
@@ -366,8 +428,6 @@ export const generateRound = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
-
-import { AssemblyAI } from 'assemblyai';
 
 
 export const transcribeAudio = async (req, res) => {
