@@ -27,6 +27,7 @@ import ResultsPage from "./pages/ResultsPage";
 import HistoryPage from "./pages/HistoryPage";
 import Telephonic from "./pages/Telephonic";
 import TelephonicSetup from "./pages/TelephonicSetup";
+import SpeechPractice from "./pages/SpeechPractice";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,12 @@ const App = () => {
               <Route
                 path="/history"
                 element={authUser ? <HistoryPage /> : <Navigate to="/login" />}
+              />
+              <Route
+                path="/speech-practice"
+                element={
+                  authUser ? <SpeechPractice /> : <Navigate to="/login" />
+                }
               />
             </Route>
             <Route path="/telephonic-setup" element={<TelephonicSetup />} />

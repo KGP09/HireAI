@@ -26,15 +26,14 @@ export const signup = async (req, res) => {
       role,
     });
     if (newUser) {
-      const token = generateToken(newUser._id, res);
+      generateToken(newUser._id, res);
       await newUser.save();
       res.status(201).json({
         _id: newUser._id,
         username: newUser.username,
-        mail: newUser.email,
+        email: newUser.email,
         profilePic: newUser.profilePic,
         role: newUser.role,
-        token,
       });
     } else {
       res.status(400).json({
@@ -64,14 +63,13 @@ export const login = async (req, res) => {
         message: "Invalid Credentials!",
       });
     }
-    const token = generateToken(user._id, res);
-    console.log(token);
+    generateToken(user._id, res);
     res.status(200).json({
       _id: user._id,
-      fullName: user.fullName,
-      mail: user.email,
+      username: user.username,
+      email: user.email,
       profilePic: user.profilePic,
-      token,
+      role: user.role,
     });
   } catch (error) {
     console.log();
@@ -156,10 +154,22 @@ export const updateProfile = async (req, res) => {
 
 export const checkAuth = (req, res) => {
   try {
-    return res.status(200).json(req.user);
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { _id, username, email, profilePic, role } = req.user;
+
+    return res.status(200).json({
+      _id,
+      username,
+      email,
+      profilePic,
+      role,
+    });
   } catch (error) {
     console.log("Error in Auth!");
-    req.status(500).json({
+    res.status(500).json({
       message: "Internal Error!",
     });
   }

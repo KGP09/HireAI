@@ -13,6 +13,7 @@ import { Db } from "./utils/db.js";
 import authRoutes from "./routes/auth.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
 import testRoutes from "./routes/tests.routes.js";
+import speechRoutes from "./routes/speech.routes.js";
 import cookieParser from "cookie-parser";
 import { app, server } from "./utils/socket.io.js";
 import userRoutes from "./routes/user.routes.js";
@@ -32,6 +33,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/tests", testRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/speech", speechRoutes);
 
 // console.log("Registered Routes:");
 // app._router.stack.forEach((r) => {

@@ -53,42 +53,42 @@ export const useAuthStore = create((set, get) => ({
   //     toast.error("Invalid Credentials!");
   //   }
   // },
-  // Inside your useAuthStore.js
-login: async (data) => {
-  set({ isLoggingIn: true });
-  try {
-    const res = await axiosInstance.post("/auth/login", data);
-    
-    // SAVE TO LOCAL STORAGE IMMEDIATELY
-    localStorage.setItem("userId", res.data._id);
-    localStorage.setItem("userEmail", res.data.mail); // Use 'mail' from your backend res
+  login: async (data) => {
+    set({ isLoggingIn: true });
+    try {
+      const res = await axiosInstance.post("/auth/login", data);
 
-    set({ authUser: res.data });
-    toast.success("Logged in successfully");
-  } catch (error) {
-    toast.error(error.response?.data?.message || "Login failed");
-  } finally {
-    set({ isLoggingIn: false });
-  }
-},
+      // Persist a minimal user snapshot if needed elsewhere
+      localStorage.setItem("userId", res.data._id);
+      if (res.data.email) {
+        localStorage.setItem("userEmail", res.data.email);
+      }
+
+      set({ authUser: res.data });
+      toast.success("Logged in successfully");
+      get().connectSocket();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Login failed");
+    } finally {
+      set({ isLoggingIn: false });
+    }
+  },
   logout: async () => {
-  try {
-    // 1. Call backend to clear the cookie
-    await axiosInstance.post("/auth/logout");
-    
-    // 2. Clear local storage
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userEmail");
-    
-    // 3. Reset Zustand state
-    set({ authUser: null });
-    
-    toast.success("Logged out successfully");
-  } catch (error) {
-    console.error("Logout error:", error);
-    toast.error("Failed to logout");
-  }
-},
+    try {
+      await axiosInstance.post("/auth/logout");
+
+      localStorage.removeItem("userId");
+      localStorage.removeItem("userEmail");
+
+      get().disconnectSocket();
+      set({ authUser: null });
+
+      toast.success("Logged out successfully");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Failed to logout");
+    }
+  },
 
   updateProfile: async (data) => {
     set({ isUpdatingProfile: true });

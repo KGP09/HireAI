@@ -272,10 +272,19 @@ const InterviewPage = () => {
   };
 
   return (
-    <div className="h-screen bg-[#05070a] text-slate-200 font-sans p-6 overflow-hidden flex flex-col gap-6 relative">
+    <div className="h-screen bg-[#0A0A0F] text-slate-200 font-['DM_Sans'] p-6 overflow-hidden flex flex-col gap-6 relative">
       <div className="pointer-events-none absolute -top-24 -left-28 w-72 h-72 rounded-full bg-blue-600/20 blur-3xl animate-pulse" />
       <div className="pointer-events-none absolute top-1/3 -right-20 w-64 h-64 rounded-full bg-indigo-500/20 blur-3xl animate-pulse" />
       <div className="pointer-events-none absolute -bottom-20 left-1/3 w-72 h-72 rounded-full bg-emerald-500/10 blur-3xl animate-pulse" />
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-xl border border-indigo-400/20 bg-gradient-to-r from-indigo-500/15 via-violet-400/10 to-cyan-400/15 px-4 py-2"
+      >
+        <p className="text-xs md:text-sm tracking-wide text-indigo-100">
+          Focused Interview Mode · Real-time AI follow-ups · Voice-first practice
+        </p>
+      </motion.div>
       <motion.header
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
