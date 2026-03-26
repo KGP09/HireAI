@@ -117,7 +117,7 @@ export default function SpeechPractice() {
       return;
     }
 
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognition(); // webspeech API
     recognition.lang = "en-US";
     recognition.interimResults = true;
     recognition.continuous = true;
@@ -153,7 +153,7 @@ export default function SpeechPractice() {
   const startRecognition = () => {
     if (!recognitionRef.current) {
       alert(
-        "Speech recognition is not supported in this browser. Try using the latest version of Chrome or Edge."
+        "Speech recognition is not supported in this browser. Try using the latest version of Chrome or Edge.",
       );
       return;
     }
@@ -225,9 +225,9 @@ export default function SpeechPractice() {
               Impromptu Communication Lab
             </h1>
             <p className="text-sm text-slate-400 mt-2 max-w-xl">
-              Generate interview-style prompts, think for 15 seconds, then
-              speak for 60 seconds while the AI evaluates clarity, structure,
-              and confidence.
+              Generate interview-style prompts, think for 15 seconds, then speak
+              for 60 seconds while the AI evaluates clarity, structure, and
+              confidence.
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
@@ -348,13 +348,12 @@ export default function SpeechPractice() {
                 <motion.div
                   animate={{
                     scale:
-                      phase === "speaking" && isRecognizing
-                        ? [1, 1.06, 1]
-                        : 1,
+                      phase === "speaking" && isRecognizing ? [1, 1.06, 1] : 1,
                   }}
                   transition={{
                     duration: 1,
-                    repeat: phase === "speaking" && isRecognizing ? Infinity : 0,
+                    repeat:
+                      phase === "speaking" && isRecognizing ? Infinity : 0,
                   }}
                   className={`flex items-center gap-3 px-4 py-3 rounded-2xl border text-xs font-mono ${
                     phase === "speaking"
@@ -399,8 +398,8 @@ export default function SpeechPractice() {
                     !activeTopic || isAnalyzing
                       ? "bg-slate-700/70 cursor-not-allowed opacity-60"
                       : isRecognizing
-                      ? "bg-red-600 shadow-[0_0_80px_rgba(248,113,113,0.45)]"
-                      : "bg-blue-600 hover:bg-blue-500 shadow-[0_0_60px_rgba(59,130,246,0.35)]"
+                        ? "bg-red-600 shadow-[0_0_80px_rgba(248,113,113,0.45)]"
+                        : "bg-blue-600 hover:bg-blue-500 shadow-[0_0_60px_rgba(59,130,246,0.35)]"
                   }`}
                 >
                   <div
@@ -422,10 +421,16 @@ export default function SpeechPractice() {
                 </button>
                 <p className="text-[11px] uppercase tracking-[0.18em] font-mono text-slate-500">
                   {phase === "idle" && "Generate a topic to begin"}
-                  {phase === "preparing" && "Prep time — think in outlines, not scripts"}
-                  {phase === "speaking" && !isRecognizing && "Tap to start speaking"}
-                  {phase === "speaking" && isRecognizing && "Tap to end response"}
-                  {phase === "review" && "Response captured — see analysis below"}
+                  {phase === "preparing" &&
+                    "Prep time — think in outlines, not scripts"}
+                  {phase === "speaking" &&
+                    !isRecognizing &&
+                    "Tap to start speaking"}
+                  {phase === "speaking" &&
+                    isRecognizing &&
+                    "Tap to end response"}
+                  {phase === "review" &&
+                    "Response captured — see analysis below"}
                 </p>
               </div>
 
@@ -618,4 +623,3 @@ function ScoreCard({ label, value, icon: Icon, tone }) {
     </motion.div>
   );
 }
-

@@ -110,7 +110,7 @@ const HeroSection = () => (
           variants={sectionReveal}
           className="max-w-xl text-slate-300 text-base sm:text-lg leading-relaxed font-['DM_Sans']"
         >
-          Hiri AI simulates real technical interviews, evaluates your answers in
+          Hire AI simulates real technical interviews, evaluates your answers in
           real-time, and adapts to your skill level - all locally, privately.
         </motion.p>
         <motion.div variants={sectionReveal} className="flex flex-wrap gap-4">
@@ -118,7 +118,8 @@ const HeroSection = () => (
             to="/interviews"
             className="group inline-flex items-center gap-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white px-6 py-3 font-semibold font-['DM_Sans'] transition-colors"
           >
-            Start Practicing <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            Start Practicing{" "}
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
           <a
             href="#how-it-works"
@@ -147,8 +148,8 @@ const HeroSection = () => (
           <div className="rounded-xl border border-white/10 bg-black/30 p-4">
             <p className="text-xs text-slate-400 mb-2">Question</p>
             <p className="text-slate-100">
-              How would you design cache invalidation for a high-traffic
-              feed service?
+              How would you design cache invalidation for a high-traffic feed
+              service?
             </p>
           </div>
           <div className="rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-4">
@@ -168,7 +169,9 @@ const HeroSection = () => (
                 key={stat.label}
                 className="rounded-lg border border-white/10 bg-black/25 p-2 text-center"
               >
-                <p className="text-[10px] uppercase text-slate-400">{stat.label}</p>
+                <p className="text-[10px] uppercase text-slate-400">
+                  {stat.label}
+                </p>
                 <p className="text-sm text-white font-semibold">{stat.value}</p>
               </div>
             ))}
@@ -252,7 +255,9 @@ const FeaturesGrid = () => (
               <h3 className="text-lg text-slate-100 font-semibold mb-2 font-['DM_Sans']">
                 {card.title}
               </h3>
-              <p className="text-sm text-slate-300 font-['DM_Sans']">{card.desc}</p>
+              <p className="text-sm text-slate-300 font-['DM_Sans']">
+                {card.desc}
+              </p>
             </div>
           </motion.article>
         ))}
@@ -316,12 +321,16 @@ const HowItWorks = () => {
                 variants={sectionReveal}
                 className="rounded-2xl border border-white/10 bg-[#111118]/80 p-6 backdrop-blur"
               >
-                <p className="text-4xl font-['Syne'] text-indigo-300 mb-4">{step.num}</p>
+                <p className="text-4xl font-['Syne'] text-indigo-300 mb-4">
+                  {step.num}
+                </p>
                 <step.icon className="w-5 h-5 text-cyan-300 mb-3" />
                 <h3 className="text-xl text-slate-100 font-semibold font-['DM_Sans'] mb-2">
                   {step.title}
                 </h3>
-                <p className="text-slate-300 text-sm font-['DM_Sans']">{step.desc}</p>
+                <p className="text-slate-300 text-sm font-['DM_Sans']">
+                  {step.desc}
+                </p>
               </motion.article>
             ))}
           </motion.div>
@@ -345,16 +354,16 @@ const SpeechModeHighlight = () => (
         </h2>
         <ul className="space-y-3 text-slate-200 font-['DM_Sans']">
           <li className="flex gap-2">
-            <span className="text-cyan-300">•</span> Practice timed spoken answers with
-            realistic pressure.
+            <span className="text-cyan-300">•</span> Practice timed spoken
+            answers with realistic pressure.
           </li>
           <li className="flex gap-2">
-            <span className="text-cyan-300">•</span> Get instant metrics on delivery and
-            communication quality.
+            <span className="text-cyan-300">•</span> Get instant metrics on
+            delivery and communication quality.
           </li>
           <li className="flex gap-2">
-            <span className="text-cyan-300">•</span> Track confidence improvements across
-            sessions.
+            <span className="text-cyan-300">•</span> Track confidence
+            improvements across sessions.
           </li>
         </ul>
       </motion.div>
@@ -368,7 +377,9 @@ const SpeechModeHighlight = () => (
       >
         <div className="rounded-2xl border border-indigo-300/20 bg-[#0A0A0F] p-4">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-slate-200 font-['DM_Sans']">Speech Session</p>
+            <p className="text-sm text-slate-200 font-['DM_Sans']">
+              Speech Session
+            </p>
             <Waves className="w-4 h-4 text-indigo-300" />
           </div>
           <div className="flex items-end gap-1 h-14 mb-6">
@@ -396,7 +407,9 @@ const SpeechModeHighlight = () => (
                 key={score.label}
                 className="rounded-xl border border-white/10 bg-white/5 p-3"
               >
-                <p className="text-xs text-slate-400 mb-1 font-['DM_Sans']">{score.label}</p>
+                <p className="text-xs text-slate-400 mb-1 font-['DM_Sans']">
+                  {score.label}
+                </p>
                 <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
@@ -456,7 +469,9 @@ const TechStack = () => {
               className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2"
             >
               <item.icon className="w-4 h-4 text-indigo-300" />
-              <span className="text-sm text-slate-100 font-['DM_Sans']">{item.name}</span>
+              <span className="text-sm text-slate-100 font-['DM_Sans']">
+                {item.name}
+              </span>
               <span className="h-4 w-0.5 bg-gradient-to-b from-transparent via-cyan-300/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.div>
           ))}
